@@ -56,7 +56,3 @@ KadoClock is optimised to run lean:
 - GPU runs in-process (no separate GPU process)
 - JS heap is capped at 32 MB
 - Typical total RAM usage: ~70 MB across all processes
-
-## License
-
-MIT
