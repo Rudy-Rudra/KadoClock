@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>KadoClock</title>
+<style>
+  /* Drop your font file next to index.html with one of these names to use it without installing */
+  @font-face{font-family:"HNCB";font-weight:700;
+    src:local("Helvetica Neue Condensed Bold"),local("HelveticaNeue-CondensedBold"),
+        local("Helvetica Neue LT Std 77 Bold Condensed"),local("HelveticaNeueLTStd-BdCn"),
+        url("HelveticaNeue-CondensedBold.ttf"),url("HelveticaNeue-CondensedBold.otf")}
+  html,body{margin:0;background:transparent;overflow:hidden}
+  body{width:100vw;height:100vh;box-sizing:border-box;padding:10px 30px;display:flex;gap:20px;
+       user-select:none;cursor:default;font-family:"HNCB","Helvetica Neue","Arial Narrow",Arial,sans-serif}
+  .card{position:relative;flex:none;width:300px;height:300px;perspective:900px;
+        font-weight:700;font-size:290px;letter-spacing:-.01em;color:#d6d6d6}
+  .h{position:absolute;left:0;width:100%;overflow:hidden;background:#1a1a1a}
+  .h.t{top:0;height:calc(50% - 2px);border-radius:22px 22px 0 0}
+  .h.b{top:calc(50% + 2px);height:calc(50% - 2px);border-radius:0 0 22px 22px}
+  .h i{position:absolute;left:0;width:100%;height:300px;line-height:300px;text-align:center;font-style:normal}
+  .t i{top:0} .b i{top:-152px}
+  .fl{visibility:hidden;backface-visibility:hidden}
+  .fa{transform-origin:center bottom}
+  .fc{transform-origin:center top;transform:rotateX(90deg)}
+  .go .fl{visibility:visible}
+  .go .fa{animation:fa .3s ease-in forwards}
+  .go .fc{animation:fc .3s ease-out .3s forwards}
+  @keyframes fa{to{transform:rotateX(-90deg)}}
+  @keyframes fc{from{transform:rotateX(90deg)}to{transform:rotateX(0)}}
+  #ap{position:absolute;top:16px;left:22px;z-index:5;font-size:26px;letter-spacing:0;color:#9a9a9a}
+</style></head>
+<body>
+  <div class="card" id="hh"><span id="ap"></span></div>
+  <div class="card" id="mm"></div>
+<script>
+const { ipcRenderer: ipc } = require('electron');
+let h24 = false;
+
+class Card {
+  constructor(el) {
+    this.el = el;
+    el.insertAdjacentHTML('beforeend',
+      '<div class="h t"><i></i></div><div class="h b"><i></i></div>' +
+      '<div class="h t fl fa"><i></i></div><div class="h b fl fc"><i></i></div>');
+    const q = (s) => el.querySelector(s);
+    this.t = q('.t:not(.fl) i'); this.b = q('.b:not(.fl) i');
+    this.fa = q('.fa i'); this.fc = q('.fc i');
+  }
+  set(v) {
+    if (v === this.v) return;
+    const old = this.v; this.v = v;
+    if (old === undefined) { [this.t, this.b, this.fa, this.fc].forEach((n) => (n.textContent = v)); return; }
+    this.t.textContent = v; this.b.textContent = old;
+    this.fa.textContent = old; this.fc.textContent = v;
+    this.el.classList.remove('go'); void this.el.offsetWidth; this.el.classList.add('go');
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => { this.b.textContent = v; this.el.classList.remove('go'); }, 620);
+  }
+}
+
+const hh = new Card(document.getElementById('hh'));
+const mm = new Card(document.getElementById('mm'));
+const ap = document.getElementById('ap');
+
+function tick() {
+  const d = new Date(); let h = d.getHours();
+  ap.textContent = h24 ? '' : (h >= 12 ? 'PM' : 'AM');
+  if (!h24) h = h % 12 || 12;
+  hh.set(String(h).padStart(2, '0'));
+  mm.set(String(d.getMinutes()).padStart(2, '0'));
+}
+function loop() { tick(); setTimeout(loop, 60000 - (Date.now() % 60000) + 50); }
+loop();
+ipc.on('cfg', (_e, c) => { h24 = c.h24; tick(); });
+
+let sx, sy, dragging = false;
+addEventListener('mousedown', (e) => { if (e.button) return; dragging = true; sx = e.screenX; sy = e.screenY; ipc.send('drag-start'); });
+addEventListener('mousemove', (e) => { if (dragging) ipc.send('drag', e.screenX - sx, e.screenY - sy); });
+addEventListener('mouseup', () => (dragging = false));
+addEventListener('contextmenu', (e) => { e.preventDefault(); ipc.send('menu'); });
+</script></body></html>

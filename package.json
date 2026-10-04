@@ -1,0 +1,35 @@
+{
+  "name": "KadoClock",
+  "version": "1.0.0",
+  "description": "Desktop flip clock widget",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "local.kadoclock.app",
+    "productName": "KadoClock",
+    "files": [
+      "main.js",
+      "index.html",
+      "*.ttf",
+      "*.otf",
+      "package.json"
+    ],
+    "win": {
+      "target": "portable",
+      "signAndEditExecutable": false
+    },
+    "portable": {
+      "artifactName": "KadoClock.exe"
+    },
+    "directories": {
+      "output": "dist"
+    }
+  }
+}
